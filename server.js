@@ -69,21 +69,50 @@ async function renderPdfFromHtml(html, width = '770px') {
 
   try {
     const page = await browser.newPage();
-    await page.setViewport({ width: parseInt(width, 10), height: 5000 });
-    await page.setContent(html, { waitUntil: 'networkidle0' });
+    await page.setViewport({ width: parseInt(width, 10), height: 1200 });
+    await page.setDefaultNavigationTimeout(15000);
+    await page.setDefaultTimeout(15000);
+
+    await page.setContent(html, { waitUntil: 'domcontentloaded' });
     await page.emulateMediaType('screen');
 
-    const bodyHeight = await page.evaluate(() => {
-      return Math.max(
-        document.body.scrollHeight,
-        document.documentElement.scrollHeight
+    // wait for fonts + images to finish
+    await page.evaluate(async () => {
+      if (document.fonts && document.fonts.ready) {
+        await document.fonts.ready;
+      }
+
+      const images = Array.from(document.images);
+      await Promise.all(
+        images.map(img => {
+          if (img.complete) return Promise.resolve();
+          return new Promise(resolve => {
+            img.onload = resolve;
+            img.onerror = resolve;
+          });
+        })
       );
     });
+
+    // measure the actual email wrapper, not the whole body
+    const wrapperHeight = await page.evaluate(() => {
+      const el = document.querySelector('.email-wrap');
+      if (!el) throw new Error('Could not find .email-wrap');
+      return Math.ceil(el.getBoundingClientRect().height);
+    });
+
+    console.log('Measured .email-wrap height:', wrapperHeight);
 
     const pdf = await page.pdf({
       printBackground: true,
       width,
-      height: `${bodyHeight}px`
+      height: `${wrapperHeight}px`,
+      margin: {
+        top: '0px',
+        right: '0px',
+        bottom: '0px',
+        left: '0px'
+      }
     });
 
     return pdf;
