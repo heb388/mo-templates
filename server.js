@@ -69,40 +69,70 @@ async function renderPdfFromHtml(html, width = '770px') {
 
   try {
     const page = await browser.newPage();
-    await page.setViewport({ width: parseInt(width, 10), height: 1400 });
-    await page.setDefaultNavigationTimeout(15000);
-    await page.setDefaultTimeout(15000);
 
-    await page.setContent(html, { waitUntil: 'domcontentloaded' });
+    // Set a very tall viewport so nothing gets clipped during measurement
+    await page.setViewport({ width: parseInt(width, 10), height: 10000 });
+    await page.setDefaultNavigationTimeout(30000);
+    await page.setDefaultTimeout(30000);
+
+    await page.setContent(html, { waitUntil: 'networkidle0' });
     await page.emulateMediaType('screen');
 
-    // wait for layout/fonts
+    // Wait for fonts and layout to fully settle
     await page.evaluate(async () => {
       if (document.fonts && document.fonts.ready) {
         await document.fonts.ready;
       }
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 1500));
     });
 
+    // Measure the true full height by walking every element
+    // and finding the furthest bottom edge — handles absolute positioning
     const wrapperHeight = await page.evaluate(() => {
       const el = document.querySelector('.email-wrap');
       if (!el) throw new Error('Could not find .email-wrap');
 
-      return Math.ceil(
-        Math.max(
-          el.scrollHeight,
-          el.offsetHeight,
-          el.clientHeight
-        )
-      );
+      // Remove any height constraints so content can expand naturally
+      el.style.position = 'relative';
+      el.style.height = 'auto';
+      el.style.overflow = 'visible';
+
+      // Also remove height constraints on body and html
+      document.body.style.height = 'auto';
+      document.body.style.overflow = 'visible';
+      document.documentElement.style.height = 'auto';
+      document.documentElement.style.overflow = 'visible';
+
+      // Walk every descendant and track the furthest bottom edge
+      let maxBottom = 0;
+      const allElements = el.querySelectorAll('*');
+      allElements.forEach(node => {
+        const rect = node.getBoundingClientRect();
+        const bottom = rect.bottom + window.scrollY;
+        if (bottom > maxBottom) maxBottom = bottom;
+      });
+
+      // Also check the wrapper itself
+      const wrapRect = el.getBoundingClientRect();
+      const wrapBottom = wrapRect.bottom + window.scrollY;
+      if (wrapBottom > maxBottom) maxBottom = wrapBottom;
+
+      // Take the largest of all measurements with a safety buffer
+      return Math.ceil(Math.max(
+        maxBottom,
+        el.scrollHeight,
+        document.body.scrollHeight,
+        document.documentElement.scrollHeight
+      )) + 40;
     });
 
-    console.log('Measured .email-wrap height:', wrapperHeight);
+    console.log('Measured full template height:', wrapperHeight);
 
     const pdf = await page.pdf({
       printBackground: true,
-      width,
+      width: width,
       height: `${wrapperHeight}px`,
+      pageRanges: '1',
       margin: {
         top: '0px',
         right: '0px',
@@ -112,6 +142,7 @@ async function renderPdfFromHtml(html, width = '770px') {
     });
 
     return pdf;
+
   } finally {
     await browser.close();
   }
@@ -127,7 +158,7 @@ async function runJob(recordId) {
     const record = await getRecord(recordId);
     const f = record.fields || {};
 
-    // Light validation for fields the template actually needs
+    // Validate required fields
     const missing = [];
     if (!requiredField(f['Newsletter Title'])) missing.push('Newsletter Title');
     if (!requiredField(f['Newsletter Description'])) missing.push('Newsletter Description');
@@ -139,7 +170,7 @@ async function runJob(recordId) {
 
     await updateRecord(recordId, {
       'Template Status': 'Rendering',
-      'Render Debug': 'Fetching template'
+      'Render Debug': 'Fetching HTML template from GitHub'
     });
 
     const templateRes = await fetch(TEMPLATE_URL);
@@ -150,48 +181,48 @@ async function runJob(recordId) {
     let html = await templateRes.text();
 
     html = replaceTokens(html, {
-      '{{NEWSLETTER_ISSUE}}': f['Newsletter Issue Label'] || 'The Drop',
-      '{{NEWSLETTER_TITLE}}': f['Newsletter Title'] || '',
+      '{{NEWSLETTER_ISSUE}}':     f['Newsletter Issue Label'] || 'The Drop',
+      '{{NEWSLETTER_TITLE}}':     f['Newsletter Title'] || '',
       '{{NEWSLETTER_DESCRIPTION}}': f['Newsletter Description'] || '',
-      '{{HERO_IMAGE_URL}}': f['Hero Image URL'] || '',
-      '{{HERO_TITLE_RIGHT}}': f['Hero Title Right'] || f['Drop Name'] || '',
-      '{{SECTION_HEADER}}': "This Week's Drop",
+      '{{HERO_IMAGE_URL}}':       f['Hero Image URL'] || '',
+      '{{HERO_TITLE_RIGHT}}':     f['Hero Title Right'] || f['Drop Name'] || '',
+      '{{SECTION_HEADER}}':       "This Week's Drop",
 
-      '{{P1_NAME}}': f['P1 Name'] || '',
+      '{{P1_NAME}}':     f['P1 Name'] || '',
       '{{P1_DESIGNER}}': f['P1 Designer'] || '',
-      '{{P1_LABEL}}': f['P1 Condition'] || '',
-      '{{P1_PRICE}}': f['P1 Price'] || '',
-      '{{P1_RETAIL}}': f['P1 Retail'] || '',
-      '{{P1_URL}}': f['P1 URL'] || '#',
-      '{{P1_IMAGE}}': f['P1 Image URL'] || '',
+      '{{P1_LABEL}}':    f['P1 Condition'] || '',
+      '{{P1_PRICE}}':    f['P1 Price'] || '',
+      '{{P1_RETAIL}}':   f['P1 Retail'] || '',
+      '{{P1_URL}}':      f['P1 URL'] || '#',
+      '{{P1_IMAGE}}':    f['P1 Image URL'] || '',
 
-      '{{P2_NAME}}': f['P2 Name'] || '',
+      '{{P2_NAME}}':     f['P2 Name'] || '',
       '{{P2_DESIGNER}}': f['P2 Designer'] || '',
-      '{{P2_LABEL}}': f['P2 Condition'] || '',
-      '{{P2_PRICE}}': f['P2 Price'] || '',
-      '{{P2_RETAIL}}': f['P2 Retail'] || '',
-      '{{P2_URL}}': f['P2 URL'] || '#',
-      '{{P2_IMAGE}}': f['P2 Image URL'] || '',
+      '{{P2_LABEL}}':    f['P2 Condition'] || '',
+      '{{P2_PRICE}}':    f['P2 Price'] || '',
+      '{{P2_RETAIL}}':   f['P2 Retail'] || '',
+      '{{P2_URL}}':      f['P2 URL'] || '#',
+      '{{P2_IMAGE}}':    f['P2 Image URL'] || '',
 
-      '{{P3_NAME}}': f['P3 Name'] || '',
+      '{{P3_NAME}}':     f['P3 Name'] || '',
       '{{P3_DESIGNER}}': f['P3 Designer'] || '',
-      '{{P3_LABEL}}': f['P3 Condition'] || '',
-      '{{P3_PRICE}}': f['P3 Price'] || '',
-      '{{P3_RETAIL}}': f['P3 Retail'] || '',
-      '{{P3_URL}}': f['P3 URL'] || '#',
-      '{{P3_IMAGE}}': f['P3 Image URL'] || '',
+      '{{P3_LABEL}}':    f['P3 Condition'] || '',
+      '{{P3_PRICE}}':    f['P3 Price'] || '',
+      '{{P3_RETAIL}}':   f['P3 Retail'] || '',
+      '{{P3_URL}}':      f['P3 URL'] || '#',
+      '{{P3_IMAGE}}':    f['P3 Image URL'] || '',
 
-      '{{P4_NAME}}': f['P4 Name'] || '',
+      '{{P4_NAME}}':     f['P4 Name'] || '',
       '{{P4_DESIGNER}}': f['P4 Designer'] || '',
-      '{{P4_LABEL}}': f['P4 Condition'] || '',
-      '{{P4_PRICE}}': f['P4 Price'] || '',
-      '{{P4_RETAIL}}': f['P4 Retail'] || '',
-      '{{P4_URL}}': f['P4 URL'] || '#',
-      '{{P4_IMAGE}}': f['P4 Image URL'] || ''
+      '{{P4_LABEL}}':    f['P4 Condition'] || '',
+      '{{P4_PRICE}}':    f['P4 Price'] || '',
+      '{{P4_RETAIL}}':   f['P4 Retail'] || '',
+      '{{P4_URL}}':      f['P4 URL'] || '#',
+      '{{P4_IMAGE}}':    f['P4 Image URL'] || ''
     });
 
     await updateRecord(recordId, {
-      'Render Debug': 'Generating PDF'
+      'Render Debug': 'Measuring template height and generating PDF'
     });
 
     const pdfBuffer = await renderPdfFromHtml(html, '770px');
@@ -205,7 +236,7 @@ async function runJob(recordId) {
     await updateRecord(recordId, {
       'Rendered PDF': [{ url: publicUrl, filename: fileName }],
       'Template Status': 'Done',
-      'Render Debug': 'PDF generated successfully'
+      'Render Debug': 'PDF generated successfully — full template captured'
     });
 
   } catch (err) {
@@ -228,8 +259,10 @@ app.post('/start-job', async (req, res) => {
     return res.status(400).json({ error: 'Missing recordId' });
   }
 
+  // Respond immediately so Make/Airtable doesn't time out
   res.json({ ok: true });
 
+  // Run the job in the background
   runJob(recordId).catch(err => {
     console.error('Background job failed:', err);
   });
