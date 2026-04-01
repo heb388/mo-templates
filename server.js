@@ -101,20 +101,46 @@ async function runJob(recordId) {
     let html = await templateRes.text();
 
     html = replaceTokens(html, {
-      '{{NEWSLETTER_ISSUE}}': f['Newsletter Issue Label'] || 'The Drop',
-      '{{NEWSLETTER_TITLE}}': f['Newsletter Title'] || '',
-      '{{NEWSLETTER_DESCRIPTION}}': f['Newsletter Description'] || '',
-      '{{HERO_IMAGE_URL}}': f['Hero Image URL'] || '',
-      '{{HERO_TITLE_RIGHT}}': f['Drop Name'] || '',
-      '{{SECTION_HEADER}}': "This Week's Drop",
-      '{{P1_NAME}}': f['P1 Name'] || '',
-      '{{P1_DESIGNER}}': f['P1 Designer'] || '',
-      '{{P1_LABEL}}': f['P1 Condition'] || '',
-      '{{P1_PRICE}}': f['P1 Price'] || '',
-      '{{P1_RETAIL}}': f['P1 Retail'] || '',
-      '{{P1_URL}}': f['P1 URL'] || '',
-      '{{P1_IMAGE}}': f['P1 Image URL'] || ''
-    });
+      html = replaceTokens(html, {
+  '{{NEWSLETTER_ISSUE}}': f['Newsletter Issue Label'] || 'The Drop',
+  '{{NEWSLETTER_TITLE}}': f['Newsletter Title'] || '',
+  '{{NEWSLETTER_DESCRIPTION}}': f['Newsletter Description'] || '',
+  '{{HERO_IMAGE_URL}}': f['Hero Image URL'] || '',
+  '{{HERO_TITLE_RIGHT}}': f['Hero Title Right'] || f['Drop Name'] || '',
+  '{{SECTION_HEADER}}': "This Week's Drop",
+
+  '{{P1_NAME}}': f['P1 Name'] || '',
+  '{{P1_DESIGNER}}': f['P1 Designer'] || '',
+  '{{P1_LABEL}}': f['P1 Condition'] || '',
+  '{{P1_PRICE}}': f['P1 Price'] || '',
+  '{{P1_RETAIL}}': f['P1 Retail'] || '',
+  '{{P1_URL}}': f['P1 URL'] || '',
+  '{{P1_IMAGE}}': f['P1 Image URL'] || '',
+
+  '{{P2_NAME}}': f['P2 Name'] || '',
+  '{{P2_DESIGNER}}': f['P2 Designer'] || '',
+  '{{P2_LABEL}}': f['P2 Condition'] || '',
+  '{{P2_PRICE}}': f['P2 Price'] || '',
+  '{{P2_RETAIL}}': f['P2 Retail'] || '',
+  '{{P2_URL}}': f['P2 URL'] || '',
+  '{{P2_IMAGE}}': f['P2 Image URL'] || '',
+
+  '{{P3_NAME}}': f['P3 Name'] || '',
+  '{{P3_DESIGNER}}': f['P3 Designer'] || '',
+  '{{P3_LABEL}}': f['P3 Condition'] || '',
+  '{{P3_PRICE}}': f['P3 Price'] || '',
+  '{{P3_RETAIL}}': f['P3 Retail'] || '',
+  '{{P3_URL}}': f['P3 URL'] || '',
+  '{{P3_IMAGE}}': f['P3 Image URL'] || '',
+
+  '{{P4_NAME}}': f['P4 Name'] || '',
+  '{{P4_DESIGNER}}': f['P4 Designer'] || '',
+  '{{P4_LABEL}}': f['P4 Condition'] || '',
+  '{{P4_PRICE}}': f['P4 Price'] || '',
+  '{{P4_RETAIL}}': f['P4 Retail'] || '',
+  '{{P4_URL}}': f['P4 URL'] || '',
+  '{{P4_IMAGE}}': f['P4 Image URL'] || ''
+});
 
     await updateRecord(recordId, {
       'Render Debug': 'Generating PDF'
