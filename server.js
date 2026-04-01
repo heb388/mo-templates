@@ -16,7 +16,7 @@ app.use('/output', express.static(OUTPUT_DIR));
 
 const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
 const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
-const AIRTABLE_TABLE = 'Drops (Workable)';
+const AIRTABLE_TABLE = 'Drops Workable';
 const RENDER_BASE_URL = 'https://mo-templates.onrender.com';
 const TEMPLATE_URL = 'https://heb388.github.io/mo-templates/template-drop.html';
 
