@@ -60,7 +60,7 @@ function requiredField(value) {
   return typeof value === 'string' ? value.trim() : value;
 }
 
-async function renderPdfFromHtml(html, width = '770px') {
+async function renderPngFromHtml(html) {
   const browser = await puppeteer.launch({
     args: chromium.args,
     executablePath: await chromium.executablePath(),
@@ -70,15 +70,15 @@ async function renderPdfFromHtml(html, width = '770px') {
   try {
     const page = await browser.newPage();
 
-    // Set a very tall viewport so nothing gets clipped during measurement
-    await page.setViewport({ width: parseInt(width, 10), height: 10000 });
+    // Set width to match template, very tall so nothing is clipped
+    await page.setViewport({ width: 770, height: 10000, deviceScaleFactor: 2 });
     await page.setDefaultNavigationTimeout(30000);
     await page.setDefaultTimeout(30000);
 
     await page.setContent(html, { waitUntil: 'networkidle0' });
     await page.emulateMediaType('screen');
 
-    // Wait for fonts and layout to fully settle
+    // Wait for fonts and images to settle
     await page.evaluate(async () => {
       if (document.fonts && document.fonts.ready) {
         await document.fonts.ready;
@@ -86,34 +86,30 @@ async function renderPdfFromHtml(html, width = '770px') {
       await new Promise(resolve => setTimeout(resolve, 1500));
     });
 
-    // Measure the true full height by walking every element
-    // and finding the furthest bottom edge — handles absolute positioning
-    // Wait for fonts and layout to fully settle
-await page.evaluate(async () => {
-  if (document.fonts && document.fonts.ready) {
-    await document.fonts.ready;
-  }
-  await new Promise(resolve => setTimeout(resolve, 1500));
-});
+    // Measure the full height of the email wrapper
+    const fullHeight = await page.evaluate(() => {
+      const wrap = document.querySelector('.email-wrap');
+      if (!wrap) throw new Error('.email-wrap not found');
+      return Math.max(
+        wrap.scrollHeight,
+        document.body.scrollHeight,
+        document.documentElement.scrollHeight
+      );
+    });
 
-const wrapperHeight = 4238;
+    console.log('Rendering PNG at height:', fullHeight);
 
-console.log('Using fixed template height:', wrapperHeight);
+    // Resize viewport to exact content height before screenshotting
+    await page.setViewport({ width: 770, height: fullHeight, deviceScaleFactor: 2 });
 
-const pdf = await page.pdf({
-  printBackground: true,
-  width: width,
-  height: `${wrapperHeight}px`,
-  pageRanges: '1',
-  margin: {
-    top: '0px',
-    right: '0px',
-    bottom: '0px',
-    left: '0px'
-  }
-});
+    // Screenshot the email-wrap element directly — most reliable
+    const element = await page.$('.email-wrap');
+    const screenshot = await element.screenshot({
+      type: 'png',
+      omitBackground: false
+    });
 
-    return pdf;
+    return screenshot;
 
   } finally {
     await browser.close();
@@ -137,12 +133,12 @@ async function runJob(recordId) {
     if (!requiredField(f['Hero Image URL'])) missing.push('Hero Image URL');
 
     if (missing.length) {
-      throw new Error(`Missing required template fields: ${missing.join(', ')}`);
+      throw new Error(`Missing required fields: ${missing.join(', ')}`);
     }
 
     await updateRecord(recordId, {
       'Template Status': 'Rendering',
-      'Render Debug': 'Fetching HTML template from GitHub'
+      'Render Debug': 'Fetching HTML template'
     });
 
     const templateRes = await fetch(TEMPLATE_URL);
@@ -153,12 +149,12 @@ async function runJob(recordId) {
     let html = await templateRes.text();
 
     html = replaceTokens(html, {
-      '{{NEWSLETTER_ISSUE}}':     f['Newsletter Issue Label'] || 'The Drop',
-      '{{NEWSLETTER_TITLE}}':     f['Newsletter Title'] || '',
+      '{{NEWSLETTER_ISSUE}}':       f['Newsletter Issue Label'] || 'The Drop',
+      '{{NEWSLETTER_TITLE}}':       f['Newsletter Title'] || '',
       '{{NEWSLETTER_DESCRIPTION}}': f['Newsletter Description'] || '',
-      '{{HERO_IMAGE_URL}}':       f['Hero Image URL'] || '',
-      '{{HERO_TITLE_RIGHT}}':     f['Hero Title Right'] || f['Drop Name'] || '',
-      '{{SECTION_HEADER}}':       "This Week's Drop",
+      '{{HERO_IMAGE_URL}}':         f['Hero Image URL'] || '',
+      '{{HERO_TITLE_RIGHT}}':       f['Hero Title Right'] || f['Drop Name'] || '',
+      '{{SECTION_HEADER}}':         "This Week's Drop",
 
       '{{P1_NAME}}':     f['P1 Name'] || '',
       '{{P1_DESIGNER}}': f['P1 Designer'] || '',
@@ -194,21 +190,21 @@ async function runJob(recordId) {
     });
 
     await updateRecord(recordId, {
-      'Render Debug': 'Measuring template height and generating PDF'
+      'Render Debug': 'Rendering PNG screenshot'
     });
 
-    const pdfBuffer = await renderPdfFromHtml(html, '770px');
+    const pngBuffer = await renderPngFromHtml(html);
 
-    const fileName = `${recordId}.pdf`;
+    const fileName = `${recordId}.png`;
     const filePath = path.join(OUTPUT_DIR, fileName);
-    fs.writeFileSync(filePath, pdfBuffer);
+    fs.writeFileSync(filePath, pngBuffer);
 
     const publicUrl = `${RENDER_BASE_URL}/output/${fileName}`;
 
     await updateRecord(recordId, {
       'Rendered PDF': [{ url: publicUrl, filename: fileName }],
       'Template Status': 'Done',
-      'Render Debug': 'PDF generated successfully — full template captured'
+      'Render Debug': 'PNG generated successfully — full template captured'
     });
 
   } catch (err) {
@@ -224,6 +220,26 @@ async function runJob(recordId) {
   }
 }
 
+// GET route — for Airtable button field trigger
+app.get('/start-job', async (req, res) => {
+  const { recordId } = req.query;
+
+  if (!recordId) {
+    return res.status(400).send('Missing recordId');
+  }
+
+  res.send(`<html><body style="font-family:sans-serif;padding:40px">
+    <h2>✓ Render job started</h2>
+    <p>Record: ${recordId}</p>
+    <p>Check the Render Debug field in Airtable for status. You can close this tab.</p>
+  </body></html>`);
+
+  runJob(recordId).catch(err => {
+    console.error('Background job failed:', err);
+  });
+});
+
+// POST route — for Airtable scripting automation trigger
 app.post('/start-job', async (req, res) => {
   const { recordId } = req.body;
 
@@ -231,10 +247,8 @@ app.post('/start-job', async (req, res) => {
     return res.status(400).json({ error: 'Missing recordId' });
   }
 
-  // Respond immediately so Make/Airtable doesn't time out
   res.json({ ok: true });
 
-  // Run the job in the background
   runJob(recordId).catch(err => {
     console.error('Background job failed:', err);
   });
