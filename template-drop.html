@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modern Outlet — The Drop</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;600&family=Inter:wght@400&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #f0f0f0; display: flex; justify-content: center; padding: 40px 20px; }
+
+  .email-wrap {
+    width: 770px;
+    background: #fff;
+    position: relative;
+    font-family: 'Inter', sans-serif;
+    color: #2E2E2E;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    width: 770px;
+    height: 1058px;
+    background: #1a1a1a url('{{HERO_IMAGE_URL}}') center/cover no-repeat;
+    overflow: hidden;
+  }
+  .hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.5) 100%);
+  }
+  .hero-meta {
+    position: absolute;
+    left: 29px;
+    top: 23px;
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 18px;
+    line-height: 24px;
+    color: #fff;
+    width: 241px;
+  }
+  .hero-divider {
+    position: absolute;
+    left: 29px;
+    top: 91px;
+    width: 707.5px;
+    height: 1px;
+    background: #fff;
+  }
+  .hero-brand {
+    position: absolute;
+    left: 29px;
+    top: 36px;
+    font-family: 'Instrument Sans', sans-serif;
+    font-weight: 600;
+    font-size: 32px;
+    line-height: 40px;
+    color: #fff;
+    width: 625px;
+  }
+  .hero-title {
+    position: absolute;
+    left: 52px;
+    top: 148px;
+    font-family: 'Instrument Sans', sans-serif;
+    font-weight: 400;
+    font-size: 64px;
+    line-height: 50px;
+    color: #fff;
+    width: 625px;
+  }
+  .hero-title-right {
+    position: absolute;
+    left: 98px;
+    top: 925px;
+    font-family: 'Instrument Sans', sans-serif;
+    font-weight: 400;
+    font-size: 64px;
+    line-height: 50px;
+    color: #fff;
+    width: 625px;
+    text-align: right;
+  }
+  .hero-desc {
+    position: absolute;
+    left: 52px;
+    top: 277px;
+    font-family: 'Inter', sans-serif;
+    font-size: 24px;
+    line-height: 24px;
+    color: #fff;
+    width: 341px;
+  }
+
+  /* ── ARTICLE FEATURES SECTION ── */
+  .articles {
+    background: #fff;
+    position: relative;
+    width: 770px;
+    /* Will expand with content */
+  }
+
+  .articles-header {
+    padding: 67px 31px 30px;
+    font-family: 'Instrument Sans', sans-serif;
+    font-weight: 400;
+    font-size: 40px;
+    line-height: 40px;
+    color: #2E2E2E;
+  }
+
+  /* Product grid — alternating image left / right */
+  .product-row {
+    display: flex;
+    width: 770px;
+    min-height: 683px;
+    position: relative;
+  }
+  .product-row.reverse { flex-direction: row-reverse; }
+
+  .product-image {
+    width: 383px;
+    min-height: 507px;
+    background: #D9D9D9 url('{{PRODUCT_IMAGE}}') center/cover no-repeat;
+    flex-shrink: 0;
+  }
+  .product-image.tall { min-height: 512px; }
+
+  .product-info {
+    width: 387px;
+    padding: 157px 0 40px 57px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .product-row.reverse .product-info { padding-left: 50px; }
+
+  .product-label {
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 14px;
+    line-height: 24px;
+    color: #2E2E2E;
+    margin-bottom: 8px;
+  }
+  .product-name {
+    font-family: 'Inter', sans-serif;
+    font-size: 32px;
+    line-height: 28px;
+    color: #000;
+    width: 301px;
+    margin-bottom: 12px;
+  }
+  .product-designer {
+    font-family: 'Inter', sans-serif;
+    font-size: 20px;
+    line-height: 18px;
+    color: #000;
+    width: 301px;
+    margin-bottom: 40px;
+  }
+  .product-cta {
+    display: inline-block;
+    width: 204px;
+    height: 50px;
+    background: #2C4428;
+    border-radius: 30px;
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    line-height: 50px;
+    text-align: center;
+    color: #fff;
+    text-decoration: none;
+    margin-bottom: 16px;
+  }
+  .product-price {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    line-height: 18px;
+    color: #000;
+    width: 204px;
+  }
+
+  /* ── CONDITION GRADING ── */
+  .condition-section {
+    background: #fff;
+    padding: 40px 26px 50px;
+    border-top: 1px solid #eee;
+  }
+  .condition-grid {
+    display: flex;
+    gap: 0;
+    justify-content: space-between;
+    margin-top: 20px;
+  }
+  .condition-item {
+    width: 111.33px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .condition-dot {
+    width: 33px;
+    height: 33px;
+    border-radius: 50%;
+  }
+  .condition-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 20px;
+    line-height: 18px;
+    color: #000;
+    text-align: center;
+  }
+  .condition-desc {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    line-height: 18px;
+    color: #000;
+    text-align: center;
+  }
+
+  /* ── FOOTER ── */
+  .footer {
+    background: #fff;
+    padding: 65px 53px 60px;
+    border-top: 1px solid #000;
+  }
+  .footer-brand {
+    font-family: 'Instrument Sans', sans-serif;
+    font-weight: 600;
+    font-size: 32px;
+    line-height: 40px;
+    color: #2E2E2E;
+    margin-bottom: 40px;
+  }
+  .footer-tagline {
+    font-family: 'Inter', sans-serif;
+    font-size: 20px;
+    line-height: 40px;
+    color: #2E2E2E;
+    margin-bottom: 28px;
+  }
+  .footer-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .footer-nav-item {
+    font-family: 'Inter', sans-serif;
+    font-size: 24px;
+    line-height: 40px;
+    color: #2E2E2E;
+    border-bottom: 1px solid #000;
+    padding: 5px 0;
+    text-decoration: none;
+  }
+  .footer-nav-item:first-child { border-top: 1px solid #000; }
+</style>
+</head>
+<body>
+<div class="email-wrap">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-overlay"></div>
+    <div class="hero-meta">{{NEWSLETTER_ISSUE}}</div>
+    <div class="hero-divider"></div>
+    <div class="hero-brand">Modern Outlet</div>
+    <div class="hero-title">{{NEWSLETTER_TITLE}}</div>
+    <div class="hero-desc">{{NEWSLETTER_DESCRIPTION}}</div>
+    <div class="hero-title-right">{{HERO_TITLE_RIGHT}}</div>
+  </div>
+
+  <!-- ARTICLE FEATURES -->
+  <div class="articles">
+    <div class="articles-header">{{SECTION_HEADER}}</div>
+
+    <!-- PRODUCT 1 — image left -->
+    <div class="product-row">
+      <div class="product-image" style="background-image: url('{{P1_IMAGE}}');"></div>
+      <div class="product-info">
+        <div class="product-label">{{P1_LABEL}}</div>
+        <div class="product-name">{{P1_NAME}}</div>
+        <div class="product-designer">{{P1_DESIGNER}}</div>
+        <a class="product-cta" href="{{P1_URL}}">Discover Now</a>
+        <div class="product-price">{{P1_PRICE}} insider &nbsp;|&nbsp; {{P1_RETAIL}} retail</div>
+      </div>
+    </div>
+
+    <!-- PRODUCT 2 — image right -->
+    <div class="product-row reverse">
+      <div class="product-image tall" style="background-image: url('{{P2_IMAGE}}');"></div>
+      <div class="product-info">
+        <div class="product-label">{{P2_LABEL}}</div>
+        <div class="product-name">{{P2_NAME}}</div>
+        <div class="product-designer">{{P2_DESIGNER}}</div>
+        <a class="product-cta" href="{{P2_URL}}">Discover Now</a>
+        <div class="product-price">{{P2_PRICE}} insider &nbsp;|&nbsp; {{P2_RETAIL}} retail</div>
+      </div>
+    </div>
+
+    <!-- PRODUCT 3 — image left -->
+    <div class="product-row">
+      <div class="product-image" style="background-image: url('{{P3_IMAGE}}');"></div>
+      <div class="product-info">
+        <div class="product-label">{{P3_LABEL}}</div>
+        <div class="product-name">{{P3_NAME}}</div>
+        <div class="product-designer">{{P3_DESIGNER}}</div>
+        <a class="product-cta" href="{{P3_URL}}">Discover Now</a>
+        <div class="product-price">{{P3_PRICE}} insider &nbsp;|&nbsp; {{P3_RETAIL}} retail</div>
+      </div>
+    </div>
+
+    <!-- PRODUCT 4 — image right -->
+    <div class="product-row reverse">
+      <div class="product-image tall" style="background-image: url('{{P4_IMAGE}}');"></div>
+      <div class="product-info">
+        <div class="product-label">{{P4_LABEL}}</div>
+        <div class="product-name">{{P4_NAME}}</div>
+        <div class="product-designer">{{P4_DESIGNER}}</div>
+        <a class="product-cta" href="{{P4_URL}}">Discover Now</a>
+        <div class="product-price">{{P4_PRICE}} insider &nbsp;|&nbsp; {{P4_RETAIL}} retail</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONDITION GRADING -->
+  <div class="condition-section">
+    <div class="condition-grid">
+      <div class="condition-item">
+        <div class="condition-dot" style="background:#D2ECD9;"></div>
+        <div class="condition-label">Pristine</div>
+        <div class="condition-desc">Never used — only handled for inspection/photography</div>
+      </div>
+      <div class="condition-item">
+        <div class="condition-dot" style="background:#E6F4EA;"></div>
+        <div class="condition-label">Excellent</div>
+        <div class="condition-desc">Open box but virtually no signs of handling</div>
+      </div>
+      <div class="condition-item">
+        <div class="condition-dot" style="background:#FDE7C4;"></div>
+        <div class="condition-label">Very Good</div>
+        <div class="condition-desc">Floor sample condition: minimal wear, displayed briefly in a showroom</div>
+      </div>
+      <div class="condition-item">
+        <div class="condition-dot" style="background:#FFF5DD;"></div>
+        <div class="condition-label">Good</div>
+        <div class="condition-desc">Gently used with purely cosmetic marks upon close inspection</div>
+      </div>
+      <div class="condition-item">
+        <div class="condition-dot" style="background:#FBD9D3;"></div>
+        <div class="condition-label">Fair</div>
+        <div class="condition-desc">Well loved with visible wear from previous life</div>
+      </div>
+      <div class="condition-item">
+        <div class="condition-dot" style="background:#FFE8E2;"></div>
+        <div class="condition-label">As-Is</div>
+        <div class="condition-desc">Project piece for creative up-cycling and DIY enthusiasts</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-brand">Modern Outlet</div>
+    <div class="footer-tagline">the marketplace for design worth discovering.</div>
+    <nav class="footer-nav">
+      <a class="footer-nav-item" href="#">Shop All</a>
+      <a class="footer-nav-item" href="#">The Weekly Modern</a>
+      <a class="footer-nav-item" href="#">Our Story</a>
+      <a class="footer-nav-item" href="#">Our Promise</a>
+      <a class="footer-nav-item" href="#">Behind the Warehouse</a>
+      <a class="footer-nav-item" href="#">Shipping &amp; Returns</a>
+    </nav>
+  </div>
+
+</div>
+</body>
+</html>

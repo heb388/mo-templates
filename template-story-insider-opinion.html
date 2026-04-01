@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modern Outlet — The Weekly Modern</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;600&family=Inter:wght@400&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #f0f0f0; display: flex; justify-content: center; padding: 40px 20px; }
+
+  .email-wrap {
+    width: 767px;
+    background: #fff;
+    font-family: 'Inter', sans-serif;
+    color: #2E2E2E;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: #fff;
+    padding: 23px 35px 0;
+    position: relative;
+    height: 227px;
+  }
+  .header-issue {
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 18px;
+    line-height: 24px;
+    color: #2E2E2E;
+    position: absolute;
+    top: 23px;
+    left: 35px;
+    width: 241px;
+  }
+  .header-title {
+    font-family: 'Instrument Sans', sans-serif;
+    font-weight: 400;
+    font-size: 64px;
+    line-height: 40px;
+    color: #2E2E2E;
+    position: absolute;
+    top: 75px;
+    left: 35px;
+    width: 625px;
+  }
+  .header-desc {
+    font-family: 'Inter', sans-serif;
+    font-size: 24px;
+    line-height: 24px;
+    color: #2E2E2E;
+    position: absolute;
+    top: 141px;
+    left: 35px;
+    width: 502px;
+  }
+
+  /* ── HERO IMAGE ── */
+  .hero-image {
+    width: 767px;
+    height: 751px;
+    background: #D9D9D9 url('{{HERO_IMAGE_URL}}') center/cover no-repeat;
+    position: relative;
+  }
+  .hero-article-title {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 20px 111px;
+    font-family: 'Inter', sans-serif;
+    font-size: 40px;
+    line-height: 40px;
+    color: #fff;
+    text-align: center;
+    background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 100%);
+  }
+
+  /* ── HERO CTA BAR ── */
+  .hero-cta-bar {
+    background: #fff;
+    padding: 0 51px 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+  .hero-caption {
+    font-family: 'Inter', sans-serif;
+    font-size: 24px;
+    line-height: 40px;
+    color: #fff;
+    text-align: center;
+    background: #2C4428;
+    width: 667px;
+    padding: 4px 20px;
+  }
+  .hero-brand-info {
+    font-family: 'Inter', sans-serif;
+    font-size: 24px;
+    line-height: 40px;
+    color: #2E2E2E;
+    text-align: center;
+    padding: 12px 0 20px;
+    width: 513px;
+  }
+  .hero-btn {
+    display: block;
+    width: 667px;
+    height: 50px;
+    background: #2C4428;
+    border-radius: 30px;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    line-height: 50px;
+    text-align: center;
+    color: #fff;
+    text-decoration: none;
+    margin-top: 8px;
+  }
+
+  /* ── BODY COPY SECTION (dark green) ── */
+  .body-section {
+    background: #2C4428;
+    padding: 64px 50px 80px;
+  }
+  .body-category {
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 24px;
+    line-height: 40px;
+    color: #fff;
+    margin-bottom: 16px;
+  }
+  .body-text {
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 24px;
+    line-height: 40px;
+    color: #fff;
+    margin-bottom: 48px;
+    white-space: pre-line;
+  }
+  .body-text-continued {
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 24px;
+    line-height: 40px;
+    color: #fff;
+    white-space: pre-line;
+  }
+
+  /* ── ARTICLE FEATURES ── */
+  .features {
+    background: #fff;
+    padding: 46px 0 0;
+  }
+  .features-header {
+    font-family: 'Instrument Sans', sans-serif;
+    font-weight: 400;
+    font-size: 40px;
+    line-height: 40px;
+    color: #2E2E2E;
+    padding: 0 31px 30px;
+  }
+
+  .feature-row {
+    display: flex;
+    width: 767px;
+  }
+  .feature-row.reverse { flex-direction: row-reverse; }
+
+  .feature-image {
+    width: 383px;
+    height: 413px;
+    background: #D9D9D9 url() center/cover no-repeat;
+    flex-shrink: 0;
+  }
+
+  .feature-info {
+    width: 384px;
+    padding: 46px 30px 30px 33px;
+    display: flex;
+    flex-direction: column;
+  }
+  .feature-row.reverse .feature-info { padding-left: 50px; padding-right: 20px; }
+
+  .feature-label {
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 14px;
+    line-height: 24px;
+    color: #2E2E2E;
+    margin-bottom: 6px;
+  }
+  .feature-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 32px;
+    line-height: 28px;
+    color: #000;
+    width: 301px;
+    margin-bottom: 12px;
+  }
+  .feature-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 20px;
+    line-height: 18px;
+    color: #000;
+    width: 301px;
+    margin-bottom: 24px;
+  }
+  .feature-link {
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 14px;
+    line-height: 24px;
+    color: #2E2E2E;
+    text-decoration: underline;
+    margin-top: auto;
+  }
+
+  .features-cta {
+    padding: 30px 50px 50px;
+  }
+  .features-cta a {
+    display: block;
+    width: 667px;
+    height: 50px;
+    background: #2C4428;
+    border-radius: 30px;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    line-height: 50px;
+    text-align: center;
+    color: #fff;
+    text-decoration: none;
+  }
+
+  /* ── FOOTER ── */
+  .footer {
+    background: #fff;
+    padding: 65px 53px 60px;
+    border-top: 1px solid #000;
+  }
+  .footer-brand {
+    font-family: 'Instrument Sans', sans-serif;
+    font-weight: 600;
+    font-size: 32px;
+    line-height: 40px;
+    color: #2E2E2E;
+    margin-bottom: 40px;
+  }
+  .footer-tagline {
+    font-family: 'Inter', sans-serif;
+    font-size: 20px;
+    line-height: 40px;
+    color: #2E2E2E;
+    margin-bottom: 28px;
+  }
+  .footer-nav {
+    display: flex;
+    flex-direction: column;
+  }
+  .footer-nav-item {
+    font-family: 'Inter', sans-serif;
+    font-size: 24px;
+    line-height: 40px;
+    color: #2E2E2E;
+    border-bottom: 1px solid #000;
+    padding: 5px 0;
+    text-decoration: none;
+  }
+  .footer-nav-item:first-child { border-top: 1px solid #000; }
+</style>
+</head>
+<body>
+<div class="email-wrap">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-issue">{{NEWSLETTER_ISSUE}}</div>
+    <div class="header-title">{{NEWSLETTER_TITLE}}</div>
+    <div class="header-desc">{{NEWSLETTER_DESCRIPTION}}</div>
+  </div>
+
+  <!-- HERO IMAGE -->
+  <div class="hero-image" style="background-image: url('{{HERO_IMAGE_URL}}');">
+    <div class="hero-article-title">{{ARTICLE_TITLE}}</div>
+  </div>
+
+  <!-- CTA BAR -->
+  <div class="hero-cta-bar">
+    <div class="hero-brand-info">{{BRAND_PRODUCT_INFO}}</div>
+    <a class="hero-btn" href="{{CTA_URL}}">Read Now</a>
+  </div>
+
+  <!-- BODY COPY — dark green section -->
+  <div class="body-section">
+    <div class="body-category">{{ARTICLE_CATEGORY}}</div>
+    <div class="body-text">{{BODY_COPY_PART_1}}</div>
+    <div class="body-text-continued">{{BODY_COPY_PART_2}}</div>
+  </div>
+
+  <!-- ARTICLE FEATURES -->
+  <div class="features">
+    <div class="features-header">{{FEATURES_HEADER}}</div>
+
+    <!-- Feature 1 — image left -->
+    <div class="feature-row">
+      <div class="feature-image" style="background-image: url('{{F1_IMAGE}}');"></div>
+      <div class="feature-info">
+        <div class="feature-label">{{F1_LABEL}}</div>
+        <div class="feature-title">{{F1_TITLE}}</div>
+        <div class="feature-sub">{{F1_SUB}}</div>
+        <a class="feature-link" href="{{F1_URL}}">{{F1_LINK_TEXT}}</a>
+      </div>
+    </div>
+
+    <!-- Feature 2 — image right -->
+    <div class="feature-row reverse">
+      <div class="feature-image" style="background-image: url('{{F2_IMAGE}}');"></div>
+      <div class="feature-info">
+        <div class="feature-label">{{F2_LABEL}}</div>
+        <div class="feature-title">{{F2_TITLE}}</div>
+        <div class="feature-sub">{{F2_SUB}}</div>
+        <a class="feature-link" href="{{F2_URL}}">{{F2_LINK_TEXT}}</a>
+      </div>
+    </div>
+
+    <div class="features-cta">
+      <a href="{{SHOP_ALL_URL}}">Read All Features</a>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-brand">Modern Outlet</div>
+    <div class="footer-tagline">the marketplace for design worth discovering.</div>
+    <nav class="footer-nav">
+      <a class="footer-nav-item" href="#">Shop All</a>
+      <a class="footer-nav-item" href="#">The Weekly Modern</a>
+      <a class="footer-nav-item" href="#">Our Story</a>
+      <a class="footer-nav-item" href="#">Our Promise</a>
+      <a class="footer-nav-item" href="#">Behind the Warehouse</a>
+      <a class="footer-nav-item" href="#">Shipping &amp; Returns</a>
+    </nav>
+  </div>
+
+</div>
+</body>
+</html>
