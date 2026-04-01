@@ -1,9 +1,17 @@
 const express = require('express');
 const puppeteer = require('puppeteer-core');
 const chromium = require('@sparticuz/chromium');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
+const OUTPUT_DIR = path.join(__dirname, 'output');
+
+if (!fs.existsSync(OUTPUT_DIR)) {
+  fs.mkdirSync(OUTPUT_DIR);
+}
 app.use(express.json({ limit: '5mb' }));
+app.use('/output', express.static(OUTPUT_DIR));
 
 const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
 const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
@@ -114,10 +122,20 @@ async function runJob(recordId) {
 
     const pdfBuffer = await renderPdfFromHtml(html, '770px');
 
-    await updateRecord(recordId, {
-      'Template Status': 'Done',
-      'Render Debug': `PDF generated successfully (${pdfBuffer.length} bytes)`
-    });
+// save file to disk
+const fileName = `${recordId}.pdf`;
+const filePath = path.join(OUTPUT_DIR, fileName);
+fs.writeFileSync(filePath, pdfBuffer);
+
+// create public URL
+const publicUrl = `https://mo-templates.onrender.com/output/${fileName}`;
+
+// write PDF back to Airtable
+await updateRecord(recordId, {
+  'Rendered PDF': [{ url: publicUrl, filename: fileName }],
+  'Template Status': 'Done',
+  'Render Debug': `PDF generated successfully`
+});
 
   } catch (err) {
     console.error(err);
