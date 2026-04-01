@@ -70,42 +70,50 @@ async function renderPngFromHtml(html) {
   try {
     const page = await browser.newPage();
 
-    // Set width to match template, very tall so nothing is clipped
-    await page.setViewport({ width: 770, height: 10000, deviceScaleFactor: 2 });
+    // Start with a very tall viewport
+    await page.setViewport({ width: 770, height: 15000, deviceScaleFactor: 2 });
     await page.setDefaultNavigationTimeout(30000);
     await page.setDefaultTimeout(30000);
 
     await page.setContent(html, { waitUntil: 'networkidle0' });
     await page.emulateMediaType('screen');
 
-    // Wait for fonts and images to settle
+    // Wait for fonts and layout to fully settle
     await page.evaluate(async () => {
       if (document.fonts && document.fonts.ready) {
         await document.fonts.ready;
       }
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(resolve, 2000));
     });
 
-    // Measure the full height of the email wrapper
+    // Measure full content height
     const fullHeight = await page.evaluate(() => {
       const wrap = document.querySelector('.email-wrap');
       if (!wrap) throw new Error('.email-wrap not found');
+
+      // Force layout recalc
+      document.body.style.margin = '0';
+      document.body.style.padding = '0';
+
       return Math.max(
+        wrap.getBoundingClientRect().bottom,
         wrap.scrollHeight,
-        document.body.scrollHeight,
-        document.documentElement.scrollHeight
+        document.body.scrollHeight
       );
     });
 
-    console.log('Rendering PNG at height:', fullHeight);
+    console.log('Measured height:', fullHeight);
 
-    // Resize viewport to exact content height before screenshotting
-    await page.setViewport({ width: 770, height: fullHeight, deviceScaleFactor: 2 });
+    // Resize viewport to exact content height
+    await page.setViewport({ width: 770, height: Math.ceil(fullHeight) + 60, deviceScaleFactor: 2 });
 
-    // Screenshot the email-wrap element directly — most reliable
-    const element = await page.$('.email-wrap');
-    const screenshot = await element.screenshot({
+    // Wait for reflow after resize
+    await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 500)));
+
+    // Screenshot the full page
+    const screenshot = await page.screenshot({
       type: 'png',
+      fullPage: true,
       omitBackground: false
     });
 
@@ -204,7 +212,7 @@ async function runJob(recordId) {
     await updateRecord(recordId, {
       'Rendered PDF': [{ url: publicUrl, filename: fileName }],
       'Template Status': 'Done',
-      'Render Debug': 'PNG generated successfully — full template captured'
+      'Render Debug': 'PNG generated successfully'
     });
 
   } catch (err) {
@@ -220,7 +228,7 @@ async function runJob(recordId) {
   }
 }
 
-// GET route — for Airtable button field trigger
+// GET route — Airtable button field trigger
 app.get('/start-job', async (req, res) => {
   const { recordId } = req.query;
 
@@ -239,7 +247,7 @@ app.get('/start-job', async (req, res) => {
   });
 });
 
-// POST route — for Airtable scripting automation trigger
+// POST route — Airtable scripting automation trigger
 app.post('/start-job', async (req, res) => {
   const { recordId } = req.body;
 
