@@ -73,10 +73,17 @@ async function renderPdfFromHtml(html, width = '770px') {
     await page.setContent(html, { waitUntil: 'networkidle0' });
     await page.emulateMediaType('screen');
 
+    const bodyHeight = await page.evaluate(() => {
+      return Math.max(
+        document.body.scrollHeight,
+        document.documentElement.scrollHeight
+      );
+    });
+
     const pdf = await page.pdf({
       printBackground: true,
       width,
-      pageRanges: '1'
+      height: `${bodyHeight}px`
     });
 
     return pdf;
