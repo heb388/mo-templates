@@ -1,52 +1,154 @@
 const express = require('express');
 const puppeteer = require('puppeteer-core');
 const chromium = require('@sparticuz/chromium');
-const app = express();
 
+const app = express();
 app.use(express.json({ limit: '5mb' }));
 
-app.post('/render-pdf', async (req, res) => {
-  const { html, width = '770px' } = req.body;
+const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
+const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
+const AIRTABLE_TABLE = 'Drops (Workable)';
 
-  if (!html) {
-    return res.status(400).json({ error: 'No HTML provided' });
+async function airtableRequest(path, options = {}) {
+  const res = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${path}`, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
+    }
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Airtable API failed: ${res.status} ${text}`);
   }
 
-  let browser;
-  try {
-    browser = await puppeteer.launch({
-      args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
-      headless: chromium.headless,
-    });
+  return res.json();
+}
 
+async function getRecord(recordId) {
+  return airtableRequest(`${encodeURIComponent(AIRTABLE_TABLE)}/${recordId}`);
+}
+
+async function updateRecord(recordId, fields) {
+  return airtableRequest(`${encodeURIComponent(AIRTABLE_TABLE)}/${recordId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ fields })
+  });
+}
+
+function replaceTokens(html, replacements) {
+  for (const [token, value] of Object.entries(replacements)) {
+    html = html.replaceAll(token, value ?? '');
+  }
+  return html;
+}
+
+async function renderPdfFromHtml(html, width = '770px') {
+  const browser = await puppeteer.launch({
+    args: chromium.args,
+    executablePath: await chromium.executablePath(),
+    headless: true
+  });
+
+  try {
     const page = await browser.newPage();
+    await page.setViewport({ width: parseInt(width), height: 4000 });
     await page.setContent(html, { waitUntil: 'networkidle0' });
     await page.emulateMediaType('screen');
 
     const pdf = await page.pdf({
       printBackground: true,
-      width: width,
+      width,
       pageRanges: '1'
     });
 
+    return pdf;
+  } finally {
     await browser.close();
+  }
+}
 
-    res.set({
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': 'attachment; filename="newsletter.pdf"'
+async function runJob(recordId) {
+  try {
+    await updateRecord(recordId, {
+      'Template Status': 'Writing',
+      'Render Debug': 'Fetching Airtable record'
     });
-    res.send(pdf);
+
+    const record = await getRecord(recordId);
+    const f = record.fields || {};
+
+    await updateRecord(recordId, {
+      'Template Status': 'Rendering',
+      'Render Debug': 'Fetching template'
+    });
+
+    const templateRes = await fetch('https://heb388.github.io/mo-templates/template-drop.html');
+    if (!templateRes.ok) {
+      throw new Error(`Template fetch failed: ${templateRes.status}`);
+    }
+
+    let html = await templateRes.text();
+
+    html = replaceTokens(html, {
+      '{{NEWSLETTER_ISSUE}}': f['Newsletter Issue Label'] || 'The Drop',
+      '{{NEWSLETTER_TITLE}}': f['Newsletter Title'] || '',
+      '{{NEWSLETTER_DESCRIPTION}}': f['Newsletter Description'] || '',
+      '{{HERO_IMAGE_URL}}': f['Hero Image URL'] || '',
+      '{{HERO_TITLE_RIGHT}}': f['Drop Name'] || '',
+      '{{SECTION_HEADER}}': "This Week's Drop",
+      '{{P1_NAME}}': f['P1 Name'] || '',
+      '{{P1_DESIGNER}}': f['P1 Designer'] || '',
+      '{{P1_LABEL}}': f['P1 Condition'] || '',
+      '{{P1_PRICE}}': f['P1 Price'] || '',
+      '{{P1_RETAIL}}': f['P1 Retail'] || '',
+      '{{P1_URL}}': f['P1 URL'] || '',
+      '{{P1_IMAGE}}': f['P1 Image URL'] || ''
+    });
+
+    await updateRecord(recordId, {
+      'Render Debug': 'Generating PDF'
+    });
+
+    const pdfBuffer = await renderPdfFromHtml(html, '770px');
+
+    await updateRecord(recordId, {
+      'Template Status': 'Done',
+      'Render Debug': `PDF generated successfully (${pdfBuffer.length} bytes)`
+    });
 
   } catch (err) {
-    if (browser) await browser.close();
     console.error(err);
-    res.status(500).json({ error: err.message });
+    try {
+      await updateRecord(recordId, {
+        'Template Status': 'Error',
+        'Render Debug': err.message
+      });
+    } catch (innerErr) {
+      console.error('Failed to write error back to Airtable:', innerErr);
+    }
   }
+}
+
+app.post('/start-job', async (req, res) => {
+  const { recordId } = req.body;
+
+  if (!recordId) {
+    return res.status(400).json({ error: 'Missing recordId' });
+  }
+
+  res.json({ ok: true });
+
+  runJob(recordId).catch(err => {
+    console.error('Background job failed:', err);
+  });
 });
 
-app.get('/health', (req, res) => res.json({ status: 'ok' }));
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Renderer running on port ${PORT}`));
