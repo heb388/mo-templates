@@ -88,58 +88,30 @@ async function renderPdfFromHtml(html, width = '770px') {
 
     // Measure the true full height by walking every element
     // and finding the furthest bottom edge — handles absolute positioning
-    const wrapperHeight = await page.evaluate(() => {
-      const el = document.querySelector('.email-wrap');
-      if (!el) throw new Error('Could not find .email-wrap');
+    // Wait for fonts and layout to fully settle
+await page.evaluate(async () => {
+  if (document.fonts && document.fonts.ready) {
+    await document.fonts.ready;
+  }
+  await new Promise(resolve => setTimeout(resolve, 1500));
+});
 
-      // Remove any height constraints so content can expand naturally
-      el.style.position = 'relative';
-      el.style.height = 'auto';
-      el.style.overflow = 'visible';
+const wrapperHeight = 4238;
 
-      // Also remove height constraints on body and html
-      document.body.style.height = 'auto';
-      document.body.style.overflow = 'visible';
-      document.documentElement.style.height = 'auto';
-      document.documentElement.style.overflow = 'visible';
+console.log('Using fixed template height:', wrapperHeight);
 
-      // Walk every descendant and track the furthest bottom edge
-      let maxBottom = 0;
-      const allElements = el.querySelectorAll('*');
-      allElements.forEach(node => {
-        const rect = node.getBoundingClientRect();
-        const bottom = rect.bottom + window.scrollY;
-        if (bottom > maxBottom) maxBottom = bottom;
-      });
-
-      // Also check the wrapper itself
-      const wrapRect = el.getBoundingClientRect();
-      const wrapBottom = wrapRect.bottom + window.scrollY;
-      if (wrapBottom > maxBottom) maxBottom = wrapBottom;
-
-      // Take the largest of all measurements with a safety buffer
-      return Math.ceil(Math.max(
-        maxBottom,
-        el.scrollHeight,
-        document.body.scrollHeight,
-        document.documentElement.scrollHeight
-      )) + 40;
-    });
-
-    console.log('Measured full template height:', wrapperHeight);
-
-    const pdf = await page.pdf({
-      printBackground: true,
-      width: width,
-      height: `${wrapperHeight}px`,
-      pageRanges: '1',
-      margin: {
-        top: '0px',
-        right: '0px',
-        bottom: '0px',
-        left: '0px'
-      }
-    });
+const pdf = await page.pdf({
+  printBackground: true,
+  width: width,
+  height: `${wrapperHeight}px`,
+  pageRanges: '1',
+  margin: {
+    top: '0px',
+    right: '0px',
+    bottom: '0px',
+    left: '0px'
+  }
+});
 
     return pdf;
 
